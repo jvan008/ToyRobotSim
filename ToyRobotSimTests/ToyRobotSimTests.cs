@@ -8,6 +8,7 @@ using static Microsoft.VisualStudio.TestTools.UnitTesting.Assert;
 namespace ToyRobotSimTests
 {
     [TestClass]
+    [TestCategory("Developer")]
     public class BoardTest
     {
         [TestMethod]
@@ -36,6 +37,7 @@ namespace ToyRobotSimTests
     }
 
     [TestClass]
+    [TestCategory("Developer")]
     public class RobotTest
     {
         [TestMethod]
@@ -165,6 +167,7 @@ namespace ToyRobotSimTests
     }
 
     [TestClass]
+    [TestCategory("Developer")]
     public class RobotCommandTest
     {
         [TestMethod]
@@ -190,6 +193,7 @@ namespace ToyRobotSimTests
     }
 
     [TestClass]
+    [TestCategory("Developer")]
     public class RobotCommandProviderTest
     {
         [TestMethod]
@@ -263,6 +267,42 @@ namespace ToyRobotSimTests
             AreEqual("args", command.Arguments[3]);
 
             IsNull(robotCommandProvider.GetNextCommand());
+        }
+    }
+
+    [TestClass]
+    [TestCategory("Developer")]
+    public class RobotControllerTest
+    {
+        [TestMethod]
+        public void TestControl()
+        {
+            Mock<Board> mockBoard = new Mock<Board>(5);
+            Mock<Robot> mockRobot = new Mock<Robot>(mockBoard.Object);
+            Mock<Func<string>> mockStringProvider = new Mock<Func<string>>();
+            Mock<RobotCommandProvider> mockRobotCommandProvider = new Mock<RobotCommandProvider>(mockStringProvider.Object);
+
+            mockRobotCommandProvider.SetupSequence(rcp => rcp.GetNextCommand())
+                .Returns(new RobotCommand("MOVE"))
+                .Returns(new RobotCommand("PLACE", new String[] { "0", "0", "NORTH" }))
+                .Returns(new RobotCommand("LEFT"))
+                .Returns(new RobotCommand("RIGHT"))
+                .Returns(new RobotCommand("MOVE"))
+                .Returns((RobotCommand)null);
+
+            mockRobot.Setup(r => r.Move());
+            mockRobot.Setup(r => r.Place(0, 0, Robot.Heading.NORTH));
+            mockRobot.Setup(r => r.Left());
+            mockRobot.Setup(r => r.Right());
+            mockRobot.Setup(r => r.Move());
+
+            RobotController robotController = new RobotController(mockRobot.Object, mockRobotCommandProvider.Object);
+            robotController.Control();
+
+            mockBoard.VerifyAll();
+            mockStringProvider.VerifyAll();
+            mockRobot.VerifyAll();
+            mockRobotCommandProvider.VerifyAll();
         }
     }
 }

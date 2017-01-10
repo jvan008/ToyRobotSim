@@ -13,6 +13,8 @@ namespace ToyRobotSim
             Board board = new Board(5);
             Robot robot = new Robot(board);
             RobotCommandProvider robotCommandProvider = new RobotCommandProvider(() => Console.ReadLine());
+            RobotController robotController = new RobotController(robot, robotCommandProvider);
+            robotController.Control();
         }
     }
 
@@ -216,6 +218,7 @@ namespace ToyRobotSim
 
         public virtual RobotCommand GetNextCommand()
         {
+            // An empty line means we are done
             string line = stringProvider();
             if (line == null || "".Equals(line.Trim()))
             {
@@ -241,6 +244,59 @@ namespace ToyRobotSim
                 .Split(',');
 
             return new RobotCommand(cmd, arguments);
+        }
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    public class RobotController
+    {
+        private readonly Robot robot;
+
+        private readonly RobotCommandProvider robotCommandProvider;
+
+        public RobotController(Robot robot, RobotCommandProvider robotCommandProvider)
+        {
+            this.robot = robot;
+            this.robotCommandProvider = robotCommandProvider;
+        }
+
+        public void Control()
+        {
+            RobotCommand command = robotCommandProvider.GetNextCommand();
+            while (command != null)
+            {
+                // If we add more command then we should convert this to the command pattern
+                switch (command.Command)
+                {
+                    case "PLACE":
+                        // This is a little ugly but it's the only place we need to convert strings -> types
+                        robot.Place(
+                            Int32.Parse(command.Arguments[0]),
+                            Int32.Parse(command.Arguments[1]),
+                            (Robot.Heading)Enum.Parse(typeof(Robot.Heading), command.Arguments[2]));
+                        break;
+                    case "MOVE":
+                        robot.Move();
+                        break;
+                    case "LEFT":
+                        robot.Left();
+                        break;
+                    case "RIGHT":
+                        robot.Right();
+                        break;
+                    case "REPORT":
+                        robot.Report();
+                        break;
+                    default:
+                        // TODO handle this properly using a real exception
+                        throw new Exception("Unknown robot command");
+                };
+
+                // Get the next command to execute
+                command = robotCommandProvider.GetNextCommand();
+            }
         }
     }
 }
