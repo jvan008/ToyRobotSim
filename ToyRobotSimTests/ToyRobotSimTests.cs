@@ -163,4 +163,106 @@ namespace ToyRobotSimTests
             mockBoard.VerifyAll();
         }
     }
+
+    [TestClass]
+    public class RobotCommandTest
+    {
+        [TestMethod]
+        public void TestCommandOnlyNoArguments()
+        {
+            string cmdStr = "this is the command";
+            RobotCommand command = new RobotCommand(cmdStr);
+
+            AreEqual(cmdStr, command.Command);
+            IsNull(command.Arguments);
+        }
+
+        [TestMethod]
+        public void TestCommandWithArguments()
+        {
+            string cmdStr = "this is the command";
+            string[] cmdArgs = { "these", "are", "the", "arguments" };
+            RobotCommand command = new RobotCommand(cmdStr, cmdArgs);
+
+            AreEqual(cmdStr, command.Command);
+            AreEqual(cmdArgs, command.Arguments);
+        }
+    }
+
+    [TestClass]
+    public class RobotCommandProviderTest
+    {
+        [TestMethod]
+        public void TestSimpleCommands()
+        {
+            int i = 0;
+            string[] cmds = new string[] { "this ", " is", "argument" };
+            Func<string> stringProvider = () => {
+                if (i < cmds.Length)
+                {
+                    return cmds[i++];
+                }
+
+                return "";
+            };
+
+            RobotCommandProvider robotCommandProvider = new RobotCommandProvider(stringProvider);
+
+            List<RobotCommand> commands = new List<RobotCommand>(cmds.Length + 1);
+            for (int j = 0; j <= cmds.Length; j++)
+            {
+                commands.Add(robotCommandProvider.GetNextCommand());
+            }
+
+            // We've added all the commands required and the final null value too
+            AreEqual(cmds.Length + 1, commands.Count);
+
+            // Check all alements match they're command, the last entry should be null
+            for (int j = 0; j < commands.Count; j++)
+            {
+                if (j == commands.Count - 1)
+                {
+                    IsNull(commands[j]);
+                }
+                else
+                {
+                    AssertBasicCommand(cmds[j].Trim(), commands[j]);
+                }
+            }
+        }
+
+        private static void AssertBasicCommand(string commandName, RobotCommand command)
+        {
+            AreEqual(commandName, command.Command);
+            IsNull(command.Arguments);
+        }
+
+        [TestMethod]
+        public void TestCommandsWithArguments()
+        {
+            string[] args = new string[] { "command that,has ,some, args" };
+            int i = 0;
+            Func<String> stringProvider = () => {
+                if (i < args.Length)
+                {
+                    return args[i++];
+                }
+
+                return null;
+            };
+
+            RobotCommandProvider robotCommandProvider = new RobotCommandProvider(stringProvider);
+            RobotCommand command = robotCommandProvider.GetNextCommand();
+
+            AreEqual("command", command.Command);
+
+            AreEqual(4, command.Arguments.Length);
+            AreEqual("that", command.Arguments[0]);
+            AreEqual("has", command.Arguments[1]);
+            AreEqual("some", command.Arguments[2]);
+            AreEqual("args", command.Arguments[3]);
+
+            IsNull(robotCommandProvider.GetNextCommand());
+        }
+    }
 }

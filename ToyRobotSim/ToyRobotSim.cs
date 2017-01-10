@@ -12,6 +12,7 @@ namespace ToyRobotSim
         {
             Board board = new Board(5);
             Robot robot = new Robot(board);
+            RobotCommandProvider robotCommandProvider = new RobotCommandProvider(() => Console.ReadLine());
         }
     }
 
@@ -177,6 +178,69 @@ namespace ToyRobotSim
         public void Report()
         {
             Console.WriteLine("{0}, {1}, {2}", x, y, face);
+        }
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    public class RobotCommand
+    {
+        public string Command { get; }
+
+        public string[] Arguments { get; }
+
+        public RobotCommand(string command)
+        {
+            this.Command = command;
+        }
+
+        public RobotCommand(string command, string[] arguments)
+        {
+            this.Command = command;
+            this.Arguments = arguments;
+        }
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    public class RobotCommandProvider
+    {
+        private readonly Func<string> stringProvider;
+
+        public RobotCommandProvider(Func<string> stringProvider)
+        {
+            this.stringProvider = stringProvider;
+        }
+
+        public virtual RobotCommand GetNextCommand()
+        {
+            string line = stringProvider();
+            if (line == null || "".Equals(line.Trim()))
+            {
+                return null;
+            }
+
+            line = line.Trim();
+
+            // Single command, no arguments
+            if (line.IndexOf(" ") < 0)
+            {
+                return new RobotCommand(line);
+            }
+
+            // Get the command name
+            int index = line.IndexOf(' ');
+            string cmd = line.Substring(0, index);
+
+            // Get the command arguments
+            string[] arguments = line.Remove(0, index)
+                .Trim()
+                .Replace(" ", string.Empty)
+                .Split(',');
+
+            return new RobotCommand(cmd, arguments);
         }
     }
 }
